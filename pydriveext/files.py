@@ -1,6 +1,8 @@
 from typing import List, Tuple
 import itertools
 import logging
+import glob
+import os
 
 from pydrive.drive import GoogleDrive
 from pydrive.files import GoogleDriveFile, ApiRequestError
@@ -109,13 +111,36 @@ def make_dir(drive: GoogleDrive, path: str) -> GoogleDriveFile:
         file.Upload()
         return file
 
+def upload_files(drive: GoogleDrive, source: str, target: str='') -> None:
+    """Uploads file(s) to google drive
 
+    Uploads all files to the target folder, even if they are contained
+    in distinct folders originally.
+
+    Args:
+      drive: The google drive in question
+      source: glob-expression of file(s) to be uploaded.
+      target: Target folder in the google drive (if non-existent will be created)
+    """
+    file_list = glob.glob(source)
+    target_folder = drive.make_dir(target)
+    for f in file_list:
+        name = os.path.split(f)[-1]
+        metadata = {
+            'title': name,
+            'parents': [{'id': target_folder['id']}]    
+        }
+        file = drive.CreateFile(metadata)
+        file.Upload()
+        file.SetContentFile(f)
+        file.Upload()
 
 GoogleDrive.get_file = get_file
 GoogleDrive.get_paths = get_paths
 GoogleDrive.get_file_by_path = get_file_by_path
 GoogleDrive.path_exists = path_exists
 GoogleDrive.make_dir = make_dir
+GoogleDrive.upload_files = upload_files
 
     
 
