@@ -81,7 +81,7 @@ def path_exists(drive: GoogleDrive, path:str, return_file=False) -> Tuple[bool, 
             return True
     except FileNotFoundError:
         if return_file:
-            return False, _
+            return False, None
         else:
             return False
 
