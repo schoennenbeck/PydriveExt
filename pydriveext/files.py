@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 import itertools
 import logging
 
@@ -9,6 +9,8 @@ def _normalize_path(path:str) -> str:
     """Simply removes leading '/' if present."""
     while path.startswith('/'):
         path = path[1:]
+    while path.endswith('/'):
+        path = path[:-1]
     return path 
 
 def get_file(drive: GoogleDrive, id: str) -> GoogleDriveFile:
@@ -50,19 +52,42 @@ def get_file_by_path(drive: GoogleDrive, path:str) -> GoogleDriveFile:
       path: The path to obtain.
     """
     fname = path.split('/')[-1]
-    candidate_list = drive.ListFile({'q': f"title = '{fname}'"}).GetList()
-    if not candidate_list:
-        raise FileNotFoundError(f'Could not find file {path}') 
+    if len(fname) == 0:
+        return drive.get_file('root')
+    candidate_list = drive.ListFile({'q': f"title = '{fname}' and trashed = false"}).GetList()
+    
     for cand in candidate_list:
         cand_paths = drive.get_paths(cand)
         if _normalize_path(path) in cand_paths:
             return cand
     raise FileNotFoundError(f'Could not find file {path}')
 
+def path_exists(drive: GoogleDrive, path:str, return_file=False) -> Tuple[bool, GoogleDriveFile]:
+    """Checks whether the path exists in the google drive.
+    Args:
+      drive: The google drive in question.
+      path: The path to check for.
+      return_file: Whether the path should be returned if it exists.
+    Returns:
+      Tuple of boolean and GoogleDriveFile or None
+    """
+    try:
+        res = drive.get_file_by_path(path)
+        if return_file:
+            return True, res 
+        else:
+            return True
+    except FileNotFoundError:
+        if return_file:
+            return False, _
+        else:
+            return False
+
 
 
 GoogleDrive.get_file = get_file
 GoogleDrive.get_paths = get_paths
 GoogleDrive.get_file_by_path = get_file_by_path
+GoogleDrive.path_exists = path_exists
     
 
