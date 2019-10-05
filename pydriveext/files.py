@@ -42,8 +42,27 @@ def get_paths(drive: GoogleDrive, file: GoogleDriveFile) -> List[str]:
         parent_paths = itertools.chain(*[get_paths(drive, parent) for parent in parents])
         return [_normalize_path(f"{pp}/{file['title']}") for pp in parent_paths] 
 
+def get_file_by_path(drive: GoogleDrive, path:str) -> GoogleDriveFile:
+    """Tries to obtain a file from the drive via the given path.
+
+    Args:
+      drive: The google drive in question
+      path: The path to obtain.
+    """
+    fname = path.split('/')[-1]
+    candidate_list = drive.ListFile({'q': f"title = '{fname}'"}).GetList()
+    if not candidate_list:
+        raise FileNotFoundError(f'Could not find file {path}') 
+    for cand in candidate_list:
+        cand_paths = drive.get_paths(cand)
+        if _normalize_path(path) in cand_paths:
+            return cand
+    raise FileNotFoundError(f'Could not find file {path}')
+
+
 
 GoogleDrive.get_file = get_file
 GoogleDrive.get_paths = get_paths
+GoogleDrive.get_file_by_path = get_file_by_path
     
 
